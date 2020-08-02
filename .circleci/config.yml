@@ -16,6 +16,7 @@ jobs:
       name: gcloud
 
     steps:
+      - checkout
       - gcp-cli/initialize
       - run:
           name: add a temporary firewall
@@ -29,15 +30,11 @@ jobs:
             --rules=tcp:27017-27019 || true
 
       - run:
-        name: install go
-        command: |
-          wget https://dl.google.com/go/go1.14.6.linux-amd64.tar.gz
-          tar -C /usr/local -xzf go1.14.6.linux-amd64.tar.gz
-          export PATH=$PATH:/usr/local/go/bin
-
-      - run:
           name: test
           command: |
+            curl https://dl.google.com/go/go1.14.6.linux-amd64.tar.gz -o go1.14.6.linux-amd64.tar.gz
+            tar -C /usr/local -xzvf go1.14.6.linux-amd64.tar.gz
+            export PATH=$PATH:/usr/local/go/bin
             go vet ./... || echo "export VET_RESULT=${?}" >> $BASH_ENV
             go test ./... || echo "export TEST_RESULT=${?}" >> $BASH_ENV
 
@@ -57,4 +54,4 @@ workflows:
   version: 2
   test-only:
     jobs:
-      - test:
+      - test
