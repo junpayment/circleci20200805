@@ -1,0 +1,54 @@
+version: 2.1
+
+orbs:
+  gcp-cli: circleci/gcp-cli@1.3.0
+
+executors:
+  gcloud:
+    docker:
+      - image: google/cloud-sdk
+
+commands:
+
+jobs:
+  test:
+    executor:
+      name: gcloud
+
+    steps:
+      - gcp-cli/initialize
+      - run:
+          name: add a temporary firewall
+          command: |
+            export SOURCE_RANGE=`curl http://ifconfig.me/`
+            gcloud compute firewall-rules create circleci-${CIRCLE_WORKFLOW_ID}-${CIRCLE_BUILD_NUM} \
+            --network=default \
+            --action=allow \
+            --target-tags=mongo \
+            --source-ranges=${SOURCE_RANGE} \
+            --rules=tcp:27017-27019 || true
+
+      - run:
+        name: install go
+        command: |
+          wget https://dl.google.com/go/go1.14.6.linux-amd64.tar.gz
+          tar -C /usr/local -xzf go1.14.6.linux-amd64.tar.gz
+          export PATH=$PATH:/usr/local/go/bin
+
+      - run:
+          name: test
+          command: |
+            go vet ./... || echo "export VET_RESULT=${?}" >> $BASH_ENV
+            go test ./... || echo "export TEST_RESULT=${?}" >> $BASH_ENV
+
+      - run:
+          name: delete the temporary firewall
+          command: |
+            gcloud compute firewall-rules delete circleci-${CIRCLE_WORKFLOW_ID}-${CIRCLE_BUILD_NUM} --quiet
+
+      - run:
+          name: exit with error code if error occured
+          command: |
+            echo "TEST_RESULT: ${TEST_RESULT:-0}"
+            echo "VET_RESULT: ${VET_RESULT:-0}"
+            exit $((${VET_RESULT:-0} + ${TEST_RESULT:-0}))
