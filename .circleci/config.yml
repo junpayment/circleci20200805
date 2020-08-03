@@ -35,20 +35,14 @@ jobs:
             curl https://dl.google.com/go/go1.14.6.linux-amd64.tar.gz -o go1.14.6.linux-amd64.tar.gz
             tar -C /usr/local -xzvf go1.14.6.linux-amd64.tar.gz
             export PATH=$PATH:/usr/local/go/bin
-            go vet ./... || echo "export VET_RESULT=${?}" >> $BASH_ENV
-            go test ./... || echo "export TEST_RESULT=${?}" >> $BASH_ENV
+            go vet ./...
+            go test ./...
 
       - run:
           name: delete the temporary firewall
           command: |
             gcloud compute firewall-rules delete circleci-${CIRCLE_WORKFLOW_ID}-${CIRCLE_BUILD_NUM} --quiet
-
-      - run:
-          name: exit with error code if error occured
-          command: |
-            echo "TEST_RESULT: ${TEST_RESULT:-0}"
-            echo "VET_RESULT: ${VET_RESULT:-0}"
-            exit $((${VET_RESULT:-0} + ${TEST_RESULT:-0}))
+          when: always
 
 workflows:
   version: 2
