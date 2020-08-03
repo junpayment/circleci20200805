@@ -8,8 +8,6 @@ executors:
     docker:
       - image: google/cloud-sdk
 
-commands:
-
 jobs:
   test:
     executor:
